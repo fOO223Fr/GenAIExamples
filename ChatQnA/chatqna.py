@@ -62,7 +62,7 @@ LLM_MODEL = os.getenv("LLM_MODEL", "meta-llama/Meta-Llama-3-8B-Instruct")
 
 def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **kwargs):
     if self.services[cur_node].service_type == ServiceType.EMBEDDING:
-        inputs["inputs"] = inputs["text"]
+        inputs["input"] = [inputs["text"]]
         del inputs["text"]
     elif self.services[cur_node].service_type == ServiceType.RETRIEVER:
         # prepare the retriever params
@@ -88,9 +88,12 @@ def align_inputs(self, inputs, cur_node, runtime_graph, llm_parameters_dict, **k
 def align_outputs(self, data, cur_node, inputs, runtime_graph, llm_parameters_dict, **kwargs):
     next_data = {}
     if self.services[cur_node].service_type == ServiceType.EMBEDDING:
+        data = data["data"]
         assert isinstance(data, list)
-        next_data = {"text": inputs["inputs"], "embedding": data[0]}
+        next_data = {"text": inputs["input"][0], "embedding": data[0]["embedding"]}
     elif self.services[cur_node].service_type == ServiceType.RETRIEVER:
+        if "retrieved_docs" not in data:
+            raise ValueError(f"[ERROR] Missing 'retrieved_docs' in retrieval response: {data}")
 
         docs = [doc["text"] for doc in data["retrieved_docs"]]
 
@@ -212,7 +215,7 @@ class ChatQnAService:
             name="embedding",
             host=EMBEDDING_SERVER_HOST_IP,
             port=EMBEDDING_SERVER_PORT,
-            endpoint="/embed",
+            endpoint="/v1/embeddings",
             use_remote_service=True,
             service_type=ServiceType.EMBEDDING,
         )
@@ -254,7 +257,7 @@ class ChatQnAService:
             name="embedding",
             host=EMBEDDING_SERVER_HOST_IP,
             port=EMBEDDING_SERVER_PORT,
-            endpoint="/embed",
+            endpoint="/v1/embeddings",
             use_remote_service=True,
             service_type=ServiceType.EMBEDDING,
         )
@@ -293,7 +296,7 @@ class ChatQnAService:
             name="embedding",
             host=EMBEDDING_SERVER_HOST_IP,
             port=EMBEDDING_SERVER_PORT,
-            endpoint="/embed",
+            endpoint="/v1/embeddings",
             use_remote_service=True,
             service_type=ServiceType.EMBEDDING,
         )
@@ -343,7 +346,7 @@ class ChatQnAService:
             name="embedding",
             host=EMBEDDING_SERVER_HOST_IP,
             port=EMBEDDING_SERVER_PORT,
-            endpoint="/embed",
+            endpoint="/v1/embeddings",
             use_remote_service=True,
             service_type=ServiceType.EMBEDDING,
         )
